@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/pie_overlayer.png</file>
+        <file>images/pie_overlayer_center.png</file>
+    </qresource>
+</RCC>
