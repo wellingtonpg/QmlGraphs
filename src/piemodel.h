@@ -4,13 +4,13 @@
 #include <QObject>
 #include <QList>
 #include <QQmlListProperty>
-#include "slice.h"
+#include "src/slice.h"
 
 class PieModel : public QObject
 {
     Q_OBJECT
     Q_CLASSINFO("DefaultProperty", "slices")
-    Q_PROPERTY(QQmlListProperty<Slice> slices READ slices)
+    Q_PROPERTY(QQmlListProperty<Slice> slices READ slices NOTIFY slicesChanged)
 
 public:
     explicit PieModel(QObject *parent = 0);
@@ -18,6 +18,9 @@ public:
     QQmlListProperty<Slice> slices();
     unsigned int sliceCount() const;
     Slice* slice(int index) const;
+
+signals:
+    void slicesChanged();
 
 private:
     QList<Slice *> m_slices;

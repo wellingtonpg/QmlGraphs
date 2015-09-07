@@ -1,18 +1,24 @@
 #include "pie.h"
 
-Pie::Pie(QQuickPaintedItem *parent) :
-    BaseGraph(parent),
+#define PI 3.14159265
+
+Pie::Pie(QQuickItem *parent):
+    QQuickPaintedItem(parent),
+    m_model(NULL),
     m_showSeparator(false),
     m_showShadow(false),
     m_showCenterColor(false),
-    m_centerColor(255, 255, 255)
+    m_centerColor(255, 255, 255),
+    m_selectedSlice(NULL)
 {
     updateOverlayer();
+    setAcceptHoverEvents(true);
+
+    QObject::connect(this, SIGNAL(antialiasingChanged(bool)), SLOT(updateAntialiasing(bool)));
 }
 
 Pie::~Pie()
 {
-    delete m_model;
 }
 
 PieModel* Pie::model() const
@@ -42,6 +48,7 @@ void Pie::setShowSeparator(bool showSeparator)
     {
         m_showSeparator = showSeparator;
         emit showSeparatorChanged();
+        update();
     }
 }
 
@@ -56,6 +63,7 @@ void Pie::setShowShadow(bool showShadow)
     {
         m_showShadow = showShadow;
         emit showShadowChanged();
+        update();
     }
 }
 
@@ -71,6 +79,7 @@ void Pie::setShowCenterColor(bool showCenterColor)
         m_showCenterColor = showCenterColor;
         emit showCenterColorChanged();
         updateOverlayer();
+        update();
     }
 }
 
@@ -85,16 +94,31 @@ void Pie::setCenterColor(QColor centerColor)
     {
         m_centerColor = centerColor;
         emit centerColorChanged();
+        update();
+    }
+}
+
+Slice *Pie::selectedSlice() const
+{
+    return m_selectedSlice;
+}
+
+void Pie::setSelectedSlice(Slice *slice)
+{
+    if (slice != m_selectedSlice)
+    {
+        m_selectedSlice = slice;
+        emit selectedSliceChanged();
     }
 }
 
 void Pie::paint(QPainter *painter)
 {
     Q_ASSERT(painter);
+    painter->setRenderHints(QPainter::Antialiasing, true);
 
-    BaseGraph::paint(painter);
-
-    QRectF graphRect = BaseGraph::boundingRect();
+    QRectF graphRect = boundingRect();
+    QPointF center = graphRect.center();
 
     qreal currentAngle = 90;
     for (unsigned int i = 0; i < m_model->sliceCount(); ++i)
@@ -102,14 +126,41 @@ void Pie::paint(QPainter *painter)
         Slice *slice = m_model->slice(i);
         qreal spanAngle = -360 * (slice->value() / 100.0);
         paintPiece(painter, graphRect, currentAngle, spanAngle, slice->color());
+
+        // Save center point
+        qreal pos = 0.5;
+        if (showCenterColor())
+        {
+            pos = 0.75;
+        }
+        qreal x = center.x() + (cos((currentAngle + (spanAngle / 2.0)) * PI / 180.0) * (center.x() * pos));
+        qreal y = center.y() - (sin((currentAngle + (spanAngle / 2.0)) * PI / 180.0) * (center.y() * pos));
+        slice->setCenterPoint(QPointF(x, y));
+
+        QVector<QPointF> points;
+        points.push_back(center);
+        points.push_back(QPointF(cos(currentAngle * PI / 180.0) * center.x() + center.x(),
+                                 -sin(currentAngle * PI / 180.0) * center.y() + center.y()));
+
+        for (qreal i = -1; i > spanAngle; i = i - 5)
+        {
+            qreal angle = currentAngle + i;
+            points.push_back(QPointF(cos(angle * PI / 180.0) * center.x() + center.x(),
+                                     -sin(angle * PI / 180.0) * center.y() + center.y()));
+        }
+        points.push_back(QPointF(cos((currentAngle + spanAngle) * PI / 180.0) * center.x() + center.x(),
+                                 -sin((currentAngle + spanAngle) * PI / 180.0) * center.y() + center.y()));
+        slice->setPolygon(points);
+
         currentAngle += spanAngle;
     }
 
     // Draw shadow
     if (m_showShadow)
     {
-        painter->drawPixmap(graphRect.toRect(), this->overlayer());
+        painter->drawPixmap(graphRect.toRect(), m_overlayer);
     }
+
 
     // Draw center
     if (m_showCenterColor)
@@ -122,6 +173,28 @@ void Pie::paint(QPainter *painter)
                     rect.height() * -0.25);
         painter->drawPie(rect, 0 * 16, 360 * 16);
     }
+}
+#include <QDebug>
+
+void Pie::hoverMoveEvent(QHoverEvent* event)
+{
+    QQuickItem::hoverMoveEvent(event);
+
+    QPoint mousePos = event->pos();
+    for (unsigned int i = 0; i < m_model->sliceCount(); ++i)
+    {
+        Slice *slice = m_model->slice(i);
+        if (slice->polygon().containsPoint(mousePos, Qt::OddEvenFill))
+        {
+            setSelectedSlice(slice);
+            return;
+        }
+    }
+}
+
+void Pie::updateAntialiasing(bool)
+{
+    update();
 }
 
 void Pie::paintPiece(QPainter *painter, const QRectF &rect, qreal startAngle, qreal spanAngle, const QColor &color)
@@ -144,10 +217,11 @@ void Pie::updateOverlayer()
 {
     if (m_showCenterColor)
     {
-        setOverlayer(QPixmap(":/images/pie_overlayer_center.png"));
+        m_overlayer = QPixmap(":/images/pie_overlayer_center.png");
     }
     else
     {
-        setOverlayer(QPixmap(":/images/pie_overlayer.png"));
+        m_overlayer = QPixmap(":/images/pie_overlayer.png");
     }
 }
+

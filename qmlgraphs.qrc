@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/BaseChart.qml</file>
+        <file>qml/PieChart.qml</file>
+        <file>images/pie_overlayer.png</file>
+        <file>images/pie_overlayer_center.png</file>
+        <file>qml/Legend.qml</file>
+        <file>js/style.js</file>
+        <file>qml/PopUp.qml</file>
+    </qresource>
+</RCC>

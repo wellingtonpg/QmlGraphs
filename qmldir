@@ -1,0 +1,5 @@
+module QmlGraphs
+plugin QmlGraphs
+PieChart 1.0 qrc:///qml/PieChart.qml
+internal BaseChart qrc:///qml/BaseChart.qml
+Style 1.0 qrc:///js/style.js
