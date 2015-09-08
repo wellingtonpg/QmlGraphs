@@ -4,6 +4,11 @@ This is a Qt Quick Extension Plugin to be used in C++/Qt projects.
 # How to use
 Windows:
 You need to create a "QmlGraphs" folder inside your binaries folder and add "qmldir" and "QmlGraphs.dll" files.
+After that you will need to import the module in each QML file you need it:
+
+```
+import QmlGraphs 1.0
+```
 
 # How to create a PieChart
 Here is an example how to create a PieChart:
