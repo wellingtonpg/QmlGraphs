@@ -37,4 +37,4 @@ PieChart {
 
 Output:
 
-![alt tag](http://imageshack.com/a/img537/170/IbQZoT.png)
+![alt tag](https://raw.githubusercontent.com/wellingtonpg/QmlGraphs/master/demo/piechart-github-example.png)
